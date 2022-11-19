@@ -4,6 +4,8 @@
 #include <wingdi.h>
 #include <fileapi.h>
 
+#include "tileset.h"
+
 struct BitMapHolder {
     unsigned int* bitPointer;
     BITMAPINFO bitmap;
@@ -30,6 +32,7 @@ struct BitMapHolder {
         DeleteObject(handle);
         delete [] bitPointer;
     }
+    bool draw(Tileset& t, const Chapter& chapter) const;
 };
 
 PBITMAPINFO CreateBitmapInfoStruct(HBITMAP hBmp);

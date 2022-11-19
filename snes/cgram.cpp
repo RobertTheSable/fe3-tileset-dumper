@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <stdexcept>
 #include <iomanip>
-#include "DLLcode/LunarDLL.h"
+#include "LunarDLL.h"
 #include "cgram.h"
 
 void loadPalette(std::istream& file, int address, std::vector<unsigned short>& colorBuffer) 

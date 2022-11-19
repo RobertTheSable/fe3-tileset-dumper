@@ -1,0 +1,4 @@
+*.sfc
+*.smc
+/build*
+CMakeLists.txt.user

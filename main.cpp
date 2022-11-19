@@ -2,23 +2,16 @@
 #include <iomanip>
 #include <fstream>
 #include <vector>
-#include <unordered_set>
-#include <sstream>
+#include <unordered_map>
 
 #include <windows.h>
 
-#include "DLLcode/LunarDLL.h"
+#include "LunarDLL.h"
 #include "tileset.h"
 #include "cgram.h"
 #include "winbmp.h"
-
-int getAddressFromFile(std::istream& file, unsigned int address)
-{
-    file.seekg(LunarSNEStoPC(address, LC_LOROM, LC_NOHEADER));
-    int retVal = 0;
-    file.read((char*)&retVal, 3);
-    return retVal;
-}
+#include "magick.h"
+#include "pointers.h"
 
 auto decompress(std::istream& file, std::size_t inSize, std::size_t outSize) 
 {
@@ -61,21 +54,18 @@ int main(int argc, char* argv[])
         std::cerr << "Counldn't open rom.\n";
         return 2;
     }
+
     if (!LunarLoadDLL())
     {
         std::cerr << "Could not load Lunar Compress.dll.\n";
         return 3;
     }
-    
-    auto addr = LunarSNEStoPC(0x848C16, LC_LOROM, LC_NOHEADER);
-    romFile.seekg(addr);
-    std::vector<Chapter> chapters{};
-    for (int chapter = 1; chapter <= 44 ; ++chapter) {
-        chapters.push_back({romFile.get(), chapter, 0, 0});
-    }
-    
-    std::unordered_set<Tileset> chapterTilesets;
-    for (auto& chapter: chapters) {
+    loadMagick(argv[0]);
+
+    auto romInfo = snes::Rom(romFile);
+
+    std::unordered_map<TilesetIndex, Tileset> chapterTilesets;
+    for (auto& chapter: romInfo.chapters) {
         auto chapterHeaderPtr = LunarSNEStoPC(0x8A8000 + (chapter.index*8), LC_LOROM, LC_NOHEADER);
         
         romFile.seekg(chapterHeaderPtr);
@@ -84,75 +74,47 @@ int main(int argc, char* argv[])
         chapter.width = romFile.get();
         chapter.height = romFile.get();
         
-        Tileset tmp{tilesetIndex, paletteIndex};
+        TilesetIndex tmp{tilesetIndex, paletteIndex};
         if (chapterTilesets.find(tmp) == chapterTilesets.end()) {
-            tmp.chapters.push_back(chapter);
+            Tileset tData{};
+            tData.palettes = CGRam{romFile, paletteIndex};
+            tData.chapters.push_back(chapter);
             
-            auto tilesAddress = 0x9D0000 + getAddressFromFile(romFile, 0x89C9A3 + (3 * tilesetIndex));
+            auto tilesAddress = romInfo.staticTiles.getAddress(romFile, tmp.tilesetIndex);
 
             romFile.seekg(LunarSNEStoPC(tilesAddress, LC_LOROM, LC_NOHEADER));
 
             auto tileData = decompress(romFile, 0x4000, 0x4000);
             
-            std::vector<char> pixmap(64*32*16, '\0');
-            if (!LunarCreatePixelMap((void*)&tileData[0], (void*)&pixmap[0], 32*16, LC_4BPP)) {
+
+            if (!LunarCreatePixelMap((void*)&tileData[0], (void*)&tData.pixmap[0], 32*16, LC_4BPP)) {
                 std::cerr << "Failed to create pixmap!\n";
                 return 4;
             }
             
             auto tilesetAddress = 0xA20000 + getAddressFromFile(romFile, 0x89CB6E + (3 * tilesetIndex));
-            auto tilesetData = getMapTileSet(romFile, tilesetAddress);
-            
-            CGRam palettes{romFile, paletteIndex};
-            
-            BitMapHolder bp{};
-            if (bp.handle == nullptr) {
-                std::cerr << "Failed to create DIB\n";
-                return 6;
-            }
-            
-            int x = 0, y = 0, quarter = 0;
-            for (auto& tile: tilesetData) {
-                int xCoord = (x * 16) + ((quarter % 2) * 8);
-                int yCoord = (y * 16) + ((quarter / 2) * 8);
+            tData.tiles = getMapTileSet(romFile, tilesetAddress);
 
-                LunarRender8x8(
-                    bp.bitPointer, 
-                    512, 
-                    512,
-                    xCoord, 
-                    yCoord, 
-                    (void*)&pixmap[0], 
-                    &palettes.colors[0], 
-                    tile,
-                    LC_DRAW
-                );
-                ++quarter;
-                if (quarter == 4) {
-                    ++x;
-                    if (x == 32) {
-                        x = 0;
-                        ++y;
-                    }
-                    quarter = 0;
-                }
-            }
             try {
-                auto info = CreateBitmapInfoStruct(bp.handle);
-                std::wostringstream filenamestrm;
-                filenamestrm << chapter << L".bmp";
-                CreateBMPFile(filenamestrm.str().c_str(), info, bp.handle);
-            
-                LocalFree(info);
-            } catch (std::runtime_error& e) {
-                std::cerr << e.what() << '\n';
+                writePNG(tData, chapter);
+            } catch (std::runtime_error &e) {
+                std::cerr << e.what();
                 return 7;
             }
-            
-            
-            chapterTilesets.insert(tmp);
+//             try {
+//                 BitMapHolder bp{};
+//                 if (bp.handle == nullptr) {
+//                     std::cerr << "Failed to create DIB\n";
+//                     return 6;
+//                 }
+//                 bp.draw(tData, chapter);
+//             } catch (std::runtime_error& e) {
+//                 std::cerr << e.what() << '\n';
+//                 return 7;
+//             }
+            chapterTilesets[tmp] = tData;;
         } else {
-            chapterTilesets.find(tmp)->chapters.push_back(chapter);
+            chapterTilesets[tmp].chapters.push_back(chapter);
         }
     }
     

@@ -2,6 +2,9 @@
 #include "winbase.h"
 
 #include <stdexcept>
+#include <sstream>
+
+#include "LunarDLL.h"
 
 // too lazy to figure out another way to setup another way to write bmp data
 // that would be compatible with Lunar's functions.
@@ -154,4 +157,43 @@ void CreateBMPFile(LPCWSTR pszFile, PBITMAPINFO pbi, HBITMAP hBMP)
     // Free memory.  
     GlobalFree((HGLOBAL)lpBits);
     ReleaseDC(NULL, hDC);
+}
+
+bool BitMapHolder::draw(Tileset& tData, const Chapter& chapter) const {
+    if (this->handle == nullptr) {
+        return false;
+    }
+    int x = 0, y = 0, quarter = 0;
+    for (auto& tile: tData.tiles) {
+        int xCoord = (x * 16) + ((quarter % 2) * 8);
+        int yCoord = (y * 16) + ((quarter / 2) * 8);
+
+        LunarRender8x8(
+            this->bitPointer,
+            512,
+            512,
+            xCoord,
+            yCoord,
+            (void*)&tData.pixmap[0],
+            &tData.palettes.colors[0],
+            tile,
+            LC_DRAW
+        );
+        ++quarter;
+        if (quarter == 4) {
+            ++x;
+            if (x == 32) {
+                x = 0;
+                ++y;
+            }
+            quarter = 0;
+        }
+    }
+    auto info = CreateBitmapInfoStruct(this->handle);
+    std::wostringstream filenamestrm;
+    filenamestrm << chapter << L".bmp";
+    CreateBMPFile(filenamestrm.str().c_str(), info, this->handle);
+
+    LocalFree(info);
+    return true;
 }
