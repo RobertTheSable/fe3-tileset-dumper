@@ -2,6 +2,8 @@
 #include <functional>
 #include <vector>
 #include <iostream>
+
+#include <string>
 #include "cgram.h"
 
 struct Chapter {
