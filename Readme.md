@@ -33,6 +33,6 @@ You may need to set these keys in any of these locations:
 * HKEY_LOCAL_MACHINE\\Software\\ImageMagick\\{Version}\Q:{8 or 16}
 * HKEY_LOCAL_MACHINE\\Software\\ImageMagick\\Current
 
-`BinPath` and `LibPath` should be strings.`QuantumDepth` needs to be a DWORD of 8 or 16, and only needs to be set under the `Current` path.
+`BinPath` and `LibPath` should be strings. `QuantumDepth` needs to be a DWORD of 8 or 16, and only needs to be set under the `Current` path.
 
-The Magick DLLs should be located somewhere like `/usr/x86_64-w64-mingw32/.../bin/`. You can get a Wine-compatible path to put in the registry via `winepath -w \[path-to-magick-installation\]`.
+The Magick DLLs should be located somewhere like `/usr/x86_64-w64-mingw32/.../bin/`. You can get a Wine-compatible path to put in the registry via `winepath -w [path-to-magick-installation]`.
