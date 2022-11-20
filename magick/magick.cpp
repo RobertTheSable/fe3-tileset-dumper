@@ -20,7 +20,7 @@ void loadMagick(const char* path)
     Magick::InitializeMagick(path);
 }
 
-auto getImage(Tileset& tileset, const Chapter& chapter)
+auto getImage(Tileset& tileset, const snes::Chapter& chapter)
 {
     std::vector<unsigned int> bytes(512*512, 0);
 
@@ -59,12 +59,16 @@ auto getImage(Tileset& tileset, const Chapter& chapter)
     return image;
 }
 
-void writePNG(Tileset& tileset, const Chapter& chapter)
+void writePNG(Tileset& tileset, const snes::Chapter& chapter, bool bsfe)
 {
 
     try {
         auto image = getImage(tileset, chapter);
-        image.write((std::string)chapter + ".png");
+        if (bsfe) {
+            image.write(snes::BSFEFormatter.format(chapter) + ".png");
+        } else {
+            image.write(snes::FE3Formatter.format(chapter) + ".png");
+        }
     } catch (Magick::Exception& e) {
         throw std::runtime_error(e.what());
     }\

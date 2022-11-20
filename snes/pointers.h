@@ -3,10 +3,11 @@
 
 #include <iostream>
 #include <vector>
+#include <array>
+#include <optional>
 #include <cstddef>
 #include <cstdint>
-
-#include "tileset.h"
+#include "chapter.h"
 
 namespace snes {
 #pragma pack(push, 1)
@@ -23,7 +24,7 @@ namespace snes {
         uint16_t checkSum;
 
     };
-    struct BSNESHeader {
+    struct BSHeader {
         char title[16];
         uint32_t allocation;
         uint16_t starts : 16;
@@ -35,7 +36,15 @@ namespace snes {
         uint16_t checkComplement;
         uint16_t checkSum;
     };
+#pragma pack(pop)
 
+    using Palette = std::array<unsigned int, 16>;
+    struct BaseColors {
+        std::array<Palette, 3> palettes5_6_7;
+        Palette palette0, palette8, palette11, palette15;
+        std::array<Palette, 3> palettes12_13_14;
+        std::optional<Palette> operator[](int n) const;
+    };
 
     struct OffsetPointer {
         int address;
@@ -53,12 +62,11 @@ namespace snes {
         OffsetPointer staticTiles;
         std::vector<Chapter> chapters;
         Rom(std::istream& romFile);
+        const BaseColors& getBaseColors() const;
     private:
+        BaseColors baseColors;
         void getChapterData(std::istream& romFile, int chapterCount);
     };
-
-
-#pragma pack(pop)
 }
 
 #endif // POINTERS_H

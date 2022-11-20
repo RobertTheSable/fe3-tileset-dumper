@@ -4,14 +4,9 @@
 #include <iostream>
 
 #include <string>
+#include "chapter.h"
 #include "cgram.h"
-
-struct Chapter {
-    int index, number, width, height;
-    operator std::string() const;
-    friend std::ostream& operator<<(std::ostream& os, const Chapter& cp);
-    friend std::wostream& operator<<(std::wostream& os, const Chapter& cp);
-};
+#include "pointers.h"
 
 struct TilesetIndex {
     int tilesetIndex, paletteIndex;
@@ -19,7 +14,7 @@ struct TilesetIndex {
 };
 
 struct Tileset {
-    std::vector<Chapter> chapters;
+    std::vector<snes::Chapter> chapters;
     std::vector<char> pixmap;
     std::vector<unsigned int> tiles;
     CGRam palettes;
