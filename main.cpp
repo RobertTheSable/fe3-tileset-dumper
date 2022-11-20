@@ -9,7 +9,6 @@
 #include "LunarDLL.h"
 #include "tileset.h"
 #include "cgram.h"
-#include "winbmp.h"
 #include "magick.h"
 #include "pointers.h"
 

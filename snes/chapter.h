@@ -16,14 +16,12 @@ struct ChapterFormatter {
     int limits[n];
     std::string labels[n];
     std::string format(const Chapter& c) const {
-        if (c.number == 0) {
-            return std::string{""};
-        }
         for (int i = 0; i < n ; ++i) {
             if (c.number > limits[i]) {
                 return labels[i] + std::to_string(c.number - limits[i]);
             }
         }
+        return std::string{"Debug Chapter"};
     }
 };
 
