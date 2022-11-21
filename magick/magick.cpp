@@ -81,22 +81,18 @@ void writePNG(Tileset& tileset, const snes::Chapter& chapter, bool bsfe)
 {
     try {
         auto image = getImage(tileset);
-        if (bsfe) {
-            image.write(snes::BSFEFormatter.format(chapter) + ".png");
-        } else {
-            image.write(snes::FE3Formatter.format(chapter) + ".png");
-        }
+        image.write(getFormattedName(chapter, bsfe) + ".png");
     } catch (Magick::Exception& e) {
         throw std::runtime_error(e.what());
     }
 }
 
-void writeGif(Tileset &tileset, const snes::Chapter &chapter, bool bsfe)
+void writeAnim(Tileset &tileset, const snes::Chapter &chapter, bool gif, bool bsfe)
 {
     try {
         std::list<Magick::Image> frames;
+        int delay = 1;
         for (int frameI = 0; frameI < (8 * 32) ; ++frameI) {
-            int delay = 1;
             if (tileset.palettes.update(frameI)) {
                 auto img = getImage(tileset);
                 auto frameString = std::to_string(frameI);
@@ -106,24 +102,25 @@ void writeGif(Tileset &tileset, const snes::Chapter &chapter, bool bsfe)
                     }
                     frameString.insert(0, "0");
                 }
-//                img.magick("gif");
-                // gifs can't do 60fps
-                // a delay of to produces 50 fps, which is good enough
-//                img.animationDelay(2 * delay);
-                img.image()->signature = MagickSignature;
-                frames.push_back(img);
+                if (gif) {
+                    img.animationDelay(delay);
+                    frames.push_back(img);
+                } else {
+                    CreateDirectoryA(getFormattedName(chapter, bsfe).c_str(), NULL);
+                    img.write(getFormattedName(chapter, bsfe) + "/frame-" + std::to_string(frameI) + ".png");
+                }
                 delay = 1;
-//                CreateDirectoryA(getFormattedName(chapter, bsfe).c_str(), NULL);
-//                img.write(getFormattedName(chapter, bsfe) + "/frame" + frameString + ".png");
             } else {
                 ++delay;
             }
         }
-        Magick::Image output("512x512", "white");
-        output.magick("gif");
-        output.image()->signature = MagickSignature;
-        Magick::appendImages(&output, frames.begin(), frames.end());
-        output.write(getFormattedName(chapter, bsfe) + ".gif");
+        if (gif) {
+            Magick::writeImages(
+                frames.begin(), 
+                frames.end(), 
+                getFormattedName(chapter, bsfe) + ".gif"
+            );
+        }
     } catch (Magick::Exception& e) {
         throw std::runtime_error(e.what());
     }

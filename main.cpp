@@ -60,6 +60,16 @@ int main(int argc, char* argv[])
         return 3;
     }
     loadMagick(argv[0]);
+    
+    bool enableGifs = ((argv+argc) != std::find_if(argv, argv+argc, [](char* arg) -> bool {
+        return std::string{arg} == "--gif";
+    }));
+    bool enableFrames = false;
+    if (!enableGifs) {
+        enableFrames = ((argv+argc) != std::find_if(argv, argv+argc, [](char* arg) -> bool {
+            return std::string{arg} == "--frames";
+        }));
+    }
 
     auto romInfo = snes::Rom(romFile);
 
@@ -101,7 +111,12 @@ int main(int argc, char* argv[])
             tData.tiles = getMapTileSet(romFile, tilesetAddress);
 
             try {
-                writeGif(tData, chapter, isBSFE);
+                if (enableGifs || enableFrames) {
+                    writeAnim(tData, chapter, enableGifs, isBSFE);
+                } else {
+                    writePNG(tData, chapter, isBSFE);
+                }
+                
             } catch (std::runtime_error &e) {
                 std::cerr << e.what();
                 return 7;
