@@ -42,7 +42,6 @@ CGRam::CGRam(std::istream& file, int colorPtr, int brightnessPtr, const snes::Ba
     }
 
     file.seekg(LunarSNEStoPC(brightnessPtr + 0x3000, LC_LOROM, LC_NOHEADER));
-    auto beginOff = file.tellg();
 
     for (int i = 0; i < 2 ; ++i) {
         for (auto &bPalette: brightness) {
