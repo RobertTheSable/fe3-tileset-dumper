@@ -61,6 +61,7 @@ namespace snes {
         OffsetPointer tileset;
         OffsetPointer staticTiles;
         std::vector<Chapter> chapters;
+        std::vector<int> unusedChapterIndexes;
         Rom(std::istream& romFile);
         const BaseColors& getBaseColors() const;
     private:

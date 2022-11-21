@@ -20,7 +20,7 @@ struct ChapterFormatter {
                 return labels[i] + std::to_string(c.number - limits[i]);
             }
         }
-        return std::string{"Debug Chapter"};
+        return std::string{"Debug Chapter " + std::to_string(c.index)};
     }
 };
 

@@ -1,6 +1,7 @@
 #include "pointers.h"
 
 #include <stdexcept>
+#include <set>
 
 #include <windows.h>
 #include "LunarDLL.h"
@@ -112,8 +113,20 @@ snes::Rom::Rom(std::istream &romFile)
         auto addr = LunarSNEStoPC(0x848C16, LC_LOROM, LC_NOHEADER);
         romFile.seekg(addr);
 
+        std::set<int> chapterCheck;
         for (int chapter = 1; chapter <= 44 ; ++chapter) {
             chapters.push_back({romFile.get(), chapter, 0, 0});
+            chapterCheck.insert(chapters.back().index);
+        }
+        if (chapterCheck.size() != *chapterCheck.rbegin()) {
+            int expected = 1;
+            for (int index: chapterCheck) {
+                while (index != expected) {
+                    unusedChapterIndexes.push_back(expected);
+                    ++expected;
+                }
+                ++expected;
+            }
         }
 
         addr = LunarSNEStoPC(fixedPalette, LC_LOROM, LC_NOHEADER);
@@ -127,16 +140,10 @@ snes::Rom::Rom(std::istream &romFile)
         baseColors.palettes12_13_14[0] = baseColors.palettes5_6_7[0];
         baseColors.palettes12_13_14[1] = baseColors.palettes5_6_7[2];
         baseColors.palettes12_13_14[2] = baseColors.palettes5_6_7[1];
-//        snesColors[12] = snesColors[5];
-//        snesColors[13] = snesColors[7];
-//        snesColors[14] = snesColors[6];
 
         baseColors.palettes12_13_14[0].back() = baseColors.palette0[3];
         baseColors.palettes12_13_14[1].back() = baseColors.palette0[3];
         baseColors.palettes12_13_14[2].back() = baseColors.palette0[3];
-//        snesColors[12].back() = snesColors[0][3];
-//        snesColors[13].back() = snesColors[0][3];
-//        snesColors[14].back() = snesColors[0][3];
 
         loadPalette(romFile, baseColors.palette8, 0x94D000);
 

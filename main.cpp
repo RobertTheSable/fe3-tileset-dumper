@@ -33,20 +33,84 @@ void print_help(char* name)
               << " --static-color        : Skip updating frames when the palette changes.\n"
               << "                       : May be useful if a tileset has buggy \n"
               << "                       : color change info which would therwise produce.\n"
-              << "                       : rapidly flashing tiles.\n";
+              << "                       : rapidly flashing tiles.\n"
+              << "                       : The framecount is optional and defaults to 256.\n"
+              << " --unused-chapters     : Dump tilesets of any unused chapter indexes.\n";
 }
+
+using ProcessCache = std::unordered_map<TilesetIndex, Tileset>;
+
+struct Settings {
+    snes::Rom romInfo;
+    bool isBSFE = false, staticColor = false, enableGifs = false, enableFrames = false, unusedChapters = false;
+    int frameCount;
+
+    bool process(snes::Chapter& chapter, std::istream& romFile, ProcessCache& cache)
+    {
+        auto chapterHeaderPtr = LunarSNEStoPC(0x8A8000 + (chapter.index*8), LC_LOROM, LC_NOHEADER);
+
+        romFile.seekg(chapterHeaderPtr);
+        auto tilesetIndex = romFile.get();
+        auto paletteIndex = romFile.get();
+        chapter.width = romFile.get();
+        chapter.height = romFile.get();
+
+        TilesetIndex tmp{tilesetIndex, paletteIndex};
+        auto tilesetItr = cache.find(tmp);
+        if (tilesetItr == cache.end()) {
+            auto tilesAddress = romInfo.staticTiles.getAddress(romFile, tmp.tilesetIndex);
+            auto tilesetAddress = romInfo.tileset.getAddress(romFile, tmp.tilesetIndex);
+            auto animAddress = romInfo.animatedTiles.getAddress(romFile, tmp.tilesetIndex);
+            auto brightnessPtr = romInfo.brightness.getAddress(romFile, paletteIndex);
+            auto paletteAddress = romInfo.palette.getAddress(romFile, paletteIndex);
+
+            Tileset tData{
+                romFile,
+                tilesAddress,
+                animAddress,
+                tilesetAddress
+            };
+
+            tData.staticColor = staticColor;
+
+            tData.palettes = CGRam(
+                romFile,
+                paletteAddress,
+                brightnessPtr,
+                romInfo.getBaseColors()
+            );
+            tData.chapters.push_back(chapter);
+
+            if (enableGifs || enableFrames) {
+                writeAnim(tData, chapter, frameCount, enableGifs, isBSFE);
+            } else {
+                writePNG(tData, chapter, isBSFE);
+            }
+
+            cache[tmp] = std::move(tData);
+            return true;
+        } else {
+            tilesetItr->second.chapters.push_back(chapter);
+        }
+        return false;
+    }
+};
+
+struct searchOpt {
+    std::string search;
+    bool operator()(char* arg) const {
+        return std::string{arg} == search;
+    }
+};
 
 int main(int argc, char* argv[])
 {
-    
     if (argc == 1) {
         print_help(argv[0]);
         return 0;
     }
     
-    auto optItr = std::find_if(argv, argv+argc, [](char* arg) -> bool {
-        return std::string{arg} == "--help";
-    });
+    auto optItr = std::find_if(argv, argv+argc, searchOpt{"--help"});
     if ((argv+argc) != optItr) {
         print_help(argv[0]);
         return 0;
@@ -65,15 +129,11 @@ int main(int argc, char* argv[])
     }
     loadMagick(argv[0]);
     
-    optItr = std::find_if(argv, argv+argc, [](char* arg) -> bool {
-        return std::string{arg} == "--gif";
-    });
+    optItr = std::find_if(argv, argv+argc, searchOpt{"--gif"});
     bool enableGifs = ((argv+argc) != optItr);
     bool enableFrames = false;
     if (!enableGifs) {
-        optItr = std::find_if(argv, argv+argc, [](char* arg) -> bool {
-            return std::string{arg} == "--frames";
-        });
+        optItr = std::find_if(argv, argv+argc, searchOpt{"--frames"});
         enableFrames = ((argv+argc) != optItr);
     }
     
@@ -92,68 +152,47 @@ int main(int argc, char* argv[])
         }
     }
     
-    optItr = std::find_if(argv, argv+argc, [](char* arg) -> bool {
-        return std::string{arg} == "--static-color";
-    });
-    
-    bool staticColor = ((argv+argc) != optItr);
+    optItr = std::find_if(argv, argv+argc, searchOpt{"--static-color"});
 
-    auto romInfo = snes::Rom(romFile);
+    Settings s{snes::Rom(romFile)};
+    s.staticColor = ((argv+argc) != optItr);
+    s.enableFrames = enableFrames;
+    s.enableGifs = enableGifs;
+    s.isBSFE = (s.romInfo.chapters.size() == 1);
+    s.frameCount = frameCount;
+    s.unusedChapters = ((argv+argc) != std::find_if(argv, argv+argc, searchOpt{"--unused-chapters"}));
 
-    std::unordered_map<TilesetIndex, Tileset> chapterTilesets;
-    bool isBSFE = (romInfo.chapters.size() == 1);
-
-    for (auto& chapter: romInfo.chapters) {
-        auto chapterHeaderPtr = LunarSNEStoPC(0x8A8000 + (chapter.index*8), LC_LOROM, LC_NOHEADER);
-        
-        romFile.seekg(chapterHeaderPtr);
-        auto tilesetIndex = romFile.get();
-        auto paletteIndex = romFile.get();
-        chapter.width = romFile.get();
-        chapter.height = romFile.get();
-        
-        TilesetIndex tmp{tilesetIndex, paletteIndex};
-        auto tilesetItr = chapterTilesets.find(tmp);
-        if (tilesetItr == chapterTilesets.end()) {
+    ProcessCache chapterTilesets;
+    for (auto& chapter: s.romInfo.chapters) {
+        try {
+            s.process(chapter, romFile, chapterTilesets);
+        } catch (std::runtime_error &e) {
+            std::cerr << e.what();
+            return 7;
+        }
+    }
+    if (s.unusedChapters && !s.romInfo.unusedChapterIndexes.empty()) {
+        for (auto index: s.romInfo.unusedChapterIndexes) {
+            snes::Chapter chapter{index, -1, 0, 0};
             try {
-                auto tilesAddress = romInfo.staticTiles.getAddress(romFile, tmp.tilesetIndex);
-                auto tilesetAddress = romInfo.tileset.getAddress(romFile, tmp.tilesetIndex);
-                auto animAddress = romInfo.animatedTiles.getAddress(romFile, tmp.tilesetIndex);
-                
-                Tileset tData{
-                    romFile, 
-                    tilesAddress, 
-                    animAddress, 
-                    tilesetAddress
-                };
-                
-                tData.staticColor = staticColor;
-                
-                auto brightnessPtr = romInfo.brightness.getAddress(romFile, paletteIndex);
-                tData.palettes = CGRam(
-                    romFile,
-                    romInfo.palette.getAddress(romFile, paletteIndex),
-                    brightnessPtr,
-                    romInfo.getBaseColors()
-                );
-                tData.chapters.push_back(chapter);
-                
-                if (enableGifs || enableFrames) {
-                    writeAnim(tData, chapter, frameCount, enableGifs, isBSFE);
-                } else {
-                    writePNG(tData, chapter, isBSFE);
-                }
-                
-                chapterTilesets[tmp] = std::move(tData);
+                s.process(chapter, romFile, chapterTilesets);
             } catch (std::runtime_error &e) {
                 std::cerr << e.what();
                 return 7;
             }
-        } else {
-            tilesetItr->second.chapters.push_back(chapter);
         }
     }
     romFile.close();
+    if (s.romInfo.chapters.size() > 1) {
+        for (auto& itr: chapterTilesets) {
+            std::cout << "Tileset " << itr.first.tilesetIndex << " with palette " << itr.first.paletteIndex
+                      << " is used by: ";
+            for (auto& c: itr.second.chapters) {
+                std::cout << snes::FE3Formatter.format(c) << ", ";
+            }
+            std::cout << '\n';
+        }
+    }
     
     LunarUnloadDLL();
     return 0;
