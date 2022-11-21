@@ -2,7 +2,6 @@
 #define CHAPTER_H
 #include <iostream>
 #include <string>
-#include <utility>
 #include <array>
 
 namespace snes {

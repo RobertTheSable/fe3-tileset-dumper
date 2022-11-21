@@ -145,8 +145,6 @@ snes::Rom::Rom(std::istream &romFile)
 
         baseColors.palette0[0] = 0;
     }
-
-
 }
 
 const snes::BaseColors &snes::Rom::getBaseColors() const

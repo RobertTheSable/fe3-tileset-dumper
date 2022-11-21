@@ -40,4 +40,32 @@ CGRam::CGRam(std::istream& file, int colorPtr, int brightnessPtr, const snes::Ba
             }
         }
     }
+
+    file.seekg(LunarSNEStoPC(brightnessPtr + 0x3000, LC_LOROM, LC_NOHEADER));
+    auto beginOff = file.tellg();
+
+    for (int i = 0; i < 2 ; ++i) {
+        for (auto &bPalette: brightness) {
+            unsigned int bColor = file.get();
+            bColor |= (file.get() << 8);
+            bPalette[i] = LunarSNEStoPCRGB(bColor);
+        }
+    }
+}
+
+bool CGRam::update(int frame)
+{
+    if ((frame & 7) == 3) {
+        auto tmpIndex = (brightIndex & 0x1E);
+        bool wasUpdated = ((brightIndex %2) == 0);
+        if (wasUpdated) {
+            tmpIndex >>= 1;
+            this->colors[0x37] = brightness[tmpIndex][0];
+            this->colors[0x38] = brightness[tmpIndex][1];
+        }
+
+        ++brightIndex;
+        return wasUpdated;
+    }
+    return false;
 }

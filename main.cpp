@@ -77,10 +77,11 @@ int main(int argc, char* argv[])
         TilesetIndex tmp{tilesetIndex, paletteIndex};
         if (chapterTilesets.find(tmp) == chapterTilesets.end()) {
             Tileset tData{};
+            auto brightnessPtr = romInfo.brightness.getAddress(romFile, paletteIndex);
             tData.palettes = CGRam(
                     romFile,
                     romInfo.palette.getAddress(romFile, paletteIndex),
-                    romInfo.brightness.getAddress(romFile, paletteIndex),
+                    brightnessPtr,
                     romInfo.getBaseColors()
             );
             tData.chapters.push_back(chapter);
@@ -100,7 +101,7 @@ int main(int argc, char* argv[])
             tData.tiles = getMapTileSet(romFile, tilesetAddress);
 
             try {
-                writePNG(tData, chapter, isBSFE);
+                writeGif(tData, chapter, isBSFE);
             } catch (std::runtime_error &e) {
                 std::cerr << e.what();
                 return 7;

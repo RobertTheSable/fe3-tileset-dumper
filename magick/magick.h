@@ -7,6 +7,7 @@
 #include "tileset.h"
 
 void loadMagick(const char* path);
-void writePNG(Tileset& tileset, const snes::Chapter& defaultChapter, bool bsfe = false);
+void writePNG(Tileset& tileset, const snes::Chapter& chapter, bool bsfe = false);
+void writeGif(Tileset& tileset, const snes::Chapter& chapter, bool bsfe = false);
 
 #endif

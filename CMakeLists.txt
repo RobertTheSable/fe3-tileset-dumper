@@ -17,7 +17,7 @@ file(GLOB LUNAR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/DLLcode/LunarDLL.*")
 add_executable(main main.cpp ${SOURCE_FILES} ${MAGICK_FILES} ${HEADER_FILES} ${LUNAR_FILES})
 
 if(NOT DEFINED ImageMagick_LIBRARIES)
-    find_package(ImageMagick REQUIRED COMPONENTS Magick++)
+    find_package(ImageMagick REQUIRED COMPONENTS Magick++ MagickCore)
 endif()
 include_directories(${ImageMagick_INCLUDE_DIRS})
 include_directories(winbmp/)
