@@ -8,9 +8,6 @@
 #include <list>
 #include <fstream>
 
-#define MAGICKCORE_QUANTUM_DEPTH 8
-#define MAGICKCORE_HDRI_ENABLE 0
-
 #ifdef __MINGW32__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -115,6 +112,7 @@ void writeAnim(Tileset &tileset, const snes::Chapter &chapter, bool gif, bool bs
             }
         }
         if (gif) {
+            // if this fails with a message about signatures, try switching your quantum depth setting.
             Magick::writeImages(
                 frames.begin(), 
                 frames.end(), 
