@@ -21,12 +21,12 @@
 
 #include "LunarDLL.h"
 
-void loadMagick(const char* path)
+void MagickRenderer::loadMagick(const char* path)
 {
     Magick::InitializeMagick(path);
 }
 
-auto getImage(Tileset& tileset)
+auto MagickRenderer::getImage(Tileset& tileset) const
 {
     std::vector<unsigned int> bytes(512*512, 0);
 
@@ -37,8 +37,8 @@ auto getImage(Tileset& tileset)
 
         LunarRender8x8(
             &bytes[0],
-            512,
-            512,
+            width*16,
+            height*16,
             xCoord,
             yCoord,
             (void*)&tileset.pixmap[0],
@@ -49,7 +49,7 @@ auto getImage(Tileset& tileset)
         ++quarter;
         if (quarter == 4) {
             ++x;
-            if (x == 32) {
+            if (x == width) {
                 x = 0;
                 ++y;
             }
@@ -61,7 +61,7 @@ auto getImage(Tileset& tileset)
     // but Lunar probably would too
     // O = opacity, where 0 = opaque
     // 'A' treats 0 as transparent
-    Magick::Image image(512, 512, "BGRO", Magick::StorageType::CharPixel, (unsigned char*)&bytes[0]);
+    Magick::Image image(width*16, height*16, "BGRO", Magick::StorageType::CharPixel, (unsigned char*)&bytes[0]);
     return image;
 }
 
@@ -74,7 +74,7 @@ inline std::string getFormattedName(const snes::Chapter& chapter, bool bsfe)
     }
 }
 
-void writePNG(Tileset& tileset, const snes::Chapter& chapter, bool bsfe)
+void MagickRenderer::writePNG(Tileset& tileset, const snes::Chapter& chapter, bool bsfe) const
 {
     try {
         auto image = getImage(tileset);
@@ -84,7 +84,7 @@ void writePNG(Tileset& tileset, const snes::Chapter& chapter, bool bsfe)
     }
 }
 
-void writeAnim(Tileset &tileset, const snes::Chapter &chapter, int frameCount, bool gif, bool bsfe)
+void MagickRenderer::writeAnim(Tileset &tileset, const snes::Chapter &chapter, int frameCount, bool gif, bool bsfe) const
 {
     try {
         std::list<Magick::Image> frames;

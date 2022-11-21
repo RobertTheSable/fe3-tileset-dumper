@@ -35,7 +35,10 @@ void print_help(char* name)
               << "                       : color change info which would therwise produce.\n"
               << "                       : rapidly flashing tiles.\n"
               << "                       : The framecount is optional and defaults to 256.\n"
-              << " --unused-chapters     : Dump tilesets of any unused chapter indexes.\n";
+              << " --unused-chapters     : Dump tilesets of any unused chapter indexes.\n"
+              << " --width <width>       : Sets the width of the tileset image, in tiles.\n"
+              << "                       : Mist be a power of 2 and less than " << MagickRenderer::MAX_WIDTH << '\n'
+              << "                       : The default is 32.\n";
 }
 
 using ProcessCache = std::unordered_map<TilesetIndex, Tileset>;
@@ -44,6 +47,7 @@ struct Settings {
     snes::Rom romInfo;
     bool isBSFE = false, staticColor = false, enableGifs = false, enableFrames = false, unusedChapters = false;
     int frameCount;
+    MagickRenderer r;
 
     bool process(snes::Chapter& chapter, std::istream& romFile, ProcessCache& cache)
     {
@@ -82,9 +86,9 @@ struct Settings {
             tData.chapters.push_back(chapter);
 
             if (enableGifs || enableFrames) {
-                writeAnim(tData, chapter, frameCount, enableGifs, isBSFE);
+                r.writeAnim(tData, chapter, frameCount, enableGifs, isBSFE);
             } else {
-                writePNG(tData, chapter, isBSFE);
+                r.writePNG(tData, chapter, isBSFE);
             }
 
             cache[tmp] = std::move(tData);
@@ -127,8 +131,8 @@ int main(int argc, char* argv[])
         std::cerr << "Could not load Lunar Compress.dll.\n";
         return 3;
     }
-    loadMagick(argv[0]);
-    
+
+    MagickRenderer::loadMagick(argv[0]);
     optItr = std::find_if(argv, argv+argc, searchOpt{"--gif"});
     bool enableGifs = ((argv+argc) != optItr);
     bool enableFrames = false;
@@ -161,6 +165,31 @@ int main(int argc, char* argv[])
     s.isBSFE = (s.romInfo.chapters.size() == 1);
     s.frameCount = frameCount;
     s.unusedChapters = ((argv+argc) != std::find_if(argv, argv+argc, searchOpt{"--unused-chapters"}));
+
+    optItr = std::find_if(argv, argv+argc, searchOpt{"--width"});
+    if ((argv+argc) != optItr) {
+        ++optItr;
+        if ((argv+argc) != optItr) {
+            try {
+                s.r.width = std::stoi(std::string{*optItr});
+                if (s.r.width != 1 && (
+                        s.r.width == 0 ||
+                        (s.r.width & (s.r.width - 1)) != 0 ||
+                        s.r.width > MagickRenderer::MAX_WIDTH
+                    )) {
+                    std::cerr << "Invalid width provided.\n";
+                    return 1;
+                }
+                s.r.height = MagickRenderer::MAX_WIDTH / s.r.width;
+            } catch (std::exception& e) {
+                std::cerr << "Invalid width provided.\n";
+                return 1;
+            }
+        }
+    } else {
+        s.r.width = 32;
+        s.r.height = 32;
+    }
 
     ProcessCache chapterTilesets;
     for (auto& chapter: s.romInfo.chapters) {
