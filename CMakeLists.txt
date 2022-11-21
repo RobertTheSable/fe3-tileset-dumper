@@ -14,10 +14,10 @@ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/snes/*.h")
 file(GLOB MAGICK_FILES "${CMAKE_CURRENT_SOURCE_DIR}/magick/magick.*")
 file(GLOB LUNAR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/DLLcode/LunarDLL.*")
 
-add_executable(main main.cpp ${SOURCE_FILES} ${MAGICK_FILES} ${HEADER_FILES} ${LUNAR_FILES})
+add_executable(fe3tilesetdumper main.cpp ${SOURCE_FILES} ${MAGICK_FILES} ${HEADER_FILES} ${LUNAR_FILES})
 
 include(cmake/magick.cmake)
-check_magick(main)
+check_magick(fe3tilesetdumper)
 
 include_directories(winbmp/)
 include_directories(magick/)
@@ -25,10 +25,10 @@ include_directories(snes/)
 include_directories(DLLcode/)
 if(DEFINED MINGW) 
     message(STATUS "Adding MINGW static flag.")
-    target_link_options(main PRIVATE -static)
+    target_link_options(fe3tilesetdumper PRIVATE -static)
 endif()
 
-add_custom_command(TARGET main POST_BUILD
+add_custom_command(TARGET fe3tilesetdumper POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_CURRENT_SOURCE_DIR}/dlls/Lunar Compress.dll"
         "${CMAKE_CURRENT_BINARY_DIR}/Lunar Compress.dll"
