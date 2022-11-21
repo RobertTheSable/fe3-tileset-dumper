@@ -4,3 +4,5 @@
 *.bst
 /build*
 CMakeLists.txt.user
+*.png
+*.gif
