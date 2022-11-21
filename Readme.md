@@ -27,7 +27,7 @@ There is a currently [a bug](https://github.com/ImageMagick/ImageMagick6/issues/
 
 ### A Note on Cross Compiling
 
-If you are cross compiling using a tool such as Mingw64that provides its own compiled versions of ImageMagick, you will need to manually set the `BinPath` or `LibPath` registry keys in your Wine prefix in order to run the program in Wine. You might also need to set `QuantumDepth` values.
+If you are cross compiling using a tool such as Mingw64 that provides its own compiled versions of ImageMagick, you will need to manually set the `BinPath` or `LibPath` registry keys in your Wine prefix in order to run the program in Wine. You might also need to set `QuantumDepth` values.
 
 You may need to set these keys in any of these locations:
 * HKEY_LOCAL_MACHINE\\Software\\ImageMagick\\{Version}\Q:{8 or 16}
