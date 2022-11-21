@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <vector>
+#include <array>
 #include <iostream>
 
 #include <string>
@@ -14,11 +15,27 @@ struct TilesetIndex {
 };
 
 struct Tileset {
+    using AnimBuffer = std::array<char, 0x800>;
     std::vector<snes::Chapter> chapters;
-    std::vector<char> pixmap;
+    std::vector<char> rawTiles, pixmap;
     std::vector<unsigned int> tiles;
+    std::vector<AnimBuffer> animatedTiles;
+    bool update(int frame);
     CGRam palettes;
-    Tileset();
+    Tileset()=default;
+    Tileset(Tileset&&)=default;
+    Tileset& operator=(Tileset&&)=default;
+    Tileset(
+        std::istream& file, 
+        int staticTilesAddress, 
+        int animTilesAddress, 
+        int tilesetAddress
+    );
+    operator bool() const;
+    bool staticColor = false;
+private:
+    unsigned int tileIndex = 0;
+    bool valid = false;
 };
 
 template<>

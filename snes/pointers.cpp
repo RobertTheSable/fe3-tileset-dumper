@@ -78,8 +78,8 @@ snes::Rom::Rom(std::istream &romFile)
             number = 3;
         } else if (title == "始まりのとき    "_sjs) {
             animatedTiles.address = 0x89CBC9;
-            staticTiles.address = 0x89CBD8;
-            tileset.address = 0x89CBC6;
+            staticTiles.address = 0x89CBC6;
+            tileset.address = 0x89CBD8;
             brightness.address = 0x89CBCF;
             palette.address = 0x89CBCC;
             number = 4;
@@ -97,7 +97,8 @@ snes::Rom::Rom(std::istream &romFile)
         fixedPalette = 0x99EE86;
         chapters.push_back(Chapter{1, number, 0, 0});
     } else {
-        animatedTiles = {0x89c9c7, 0x970000};
+        animatedTiles.address= 0x89c9c7;
+        animatedTiles.offset = 0x970000;
         tileset.address = 0x89CB6E;
         tileset.offset = 0xA20000;
         staticTiles.address = 0x89C9A3;
@@ -154,7 +155,9 @@ const snes::BaseColors &snes::Rom::getBaseColors() const
 
 int snes::OffsetPointer::getAddress(std::istream &in, int index) const
 {
-    return offset + getAddressFromFile(in, address + (3 * index));
+    auto seekPos = address + (3 * index);
+    auto tmp = getAddressFromFile(in, seekPos);
+    return offset + tmp;
 }
 
 std::optional<snes::Palette> snes::BaseColors::operator[](int n) const

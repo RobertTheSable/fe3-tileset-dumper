@@ -1,5 +1,6 @@
 *.sfc
 *.smc
+*.bs
 *.srm
 *.bst
 /build*

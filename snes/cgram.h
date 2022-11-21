@@ -13,6 +13,6 @@ struct CGRam {
     CGRam(std::istream& file, int colorPtr, int brightnessPtr, const snes::BaseColors& fixedColors);
     bool update(int frame);
 private:
-    int brightIndex;
+    unsigned int brightIndex = 0;
     std::array<unsigned int[2], 16> brightness;
 };

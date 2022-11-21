@@ -84,13 +84,14 @@ void writePNG(Tileset& tileset, const snes::Chapter& chapter, bool bsfe)
     }
 }
 
-void writeAnim(Tileset &tileset, const snes::Chapter &chapter, bool gif, bool bsfe)
+void writeAnim(Tileset &tileset, const snes::Chapter &chapter, int frameCount, bool gif, bool bsfe)
 {
     try {
         std::list<Magick::Image> frames;
+        int firstDelay = 0;
         int delay = 1;
-        for (int frameI = 0; frameI < (8 * 32) ; ++frameI) {
-            if (tileset.palettes.update(frameI)) {
+        for (int frameI = 0; frameI < frameCount ; ++frameI) {
+            if (tileset.update(frameI)) {
                 auto img = getImage(tileset);
                 auto frameString = std::to_string(frameI);
                 if (frameI < 100) {
@@ -100,7 +101,11 @@ void writeAnim(Tileset &tileset, const snes::Chapter &chapter, bool gif, bool bs
                     frameString.insert(0, "0");
                 }
                 if (gif) {
-                    img.animationDelay(delay);
+                    if (frames.empty()) {
+                        firstDelay = delay;
+                    } else {
+                        frames.back().animationDelay(delay*2);
+                    }
                     frames.push_back(img);
                 } else {
                     CreateDirectoryA(getFormattedName(chapter, bsfe).c_str(), NULL);
@@ -112,6 +117,7 @@ void writeAnim(Tileset &tileset, const snes::Chapter &chapter, bool gif, bool bs
             }
         }
         if (gif) {
+            frames.back().animationDelay((firstDelay + delay - 1) * 2);
             // if this fails with a message about signatures, try switching your quantum depth setting.
             Magick::writeImages(
                 frames.begin(), 

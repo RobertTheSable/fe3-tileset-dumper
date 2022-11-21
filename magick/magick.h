@@ -8,6 +8,6 @@
 
 void loadMagick(const char* path);
 void writePNG(Tileset& tileset, const snes::Chapter& chapter, bool bsfe);
-void writeAnim(Tileset& tileset, const snes::Chapter& chapter, bool gif, bool bsfe);
+void writeAnim(Tileset& tileset, const snes::Chapter& chapter, int frameCount, bool gif, bool bsfe);
 
 #endif
